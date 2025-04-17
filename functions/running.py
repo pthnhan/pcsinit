@@ -21,6 +21,21 @@ def create_lag_features(X, y, n_lag):
     y_lag = y_lag[valid_idx][:, 0]  # Only keep the original target values
     return X_lag, y_lag
 
+def mnist_data():
+    # import mnist data
+    from keras.datasets import mnist
+
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    X_train = X_train.reshape(X_train.shape[0], -1)
+    X_test = X_test.reshape(X_test.shape[0], -1)
+    
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    X_train, X_test = torch.FloatTensor(X_train), torch.FloatTensor(X_test)
+    y_train, y_test = torch.LongTensor(y_train), torch.LongTensor(y_test)
+    return X_train, X_test, y_train, y_test
+
 def prepare_data(X, y, missing = False):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
@@ -45,10 +60,15 @@ def prepare_data(X, y, missing = False):
 
     return X_train, X_test, y_train, y_test
 
-def one_run(input_dim, init_type, X, y, epochs, batch_size, n_layer, n_frozen_epochs = 30, missing = False):
-    X_train, X_test, y_train, y_test = prepare_data(X,y, missing = missing)
+def one_run(init_type, X, y, epochs, batch_size, n_layer, n_frozen_epochs = 30, missing = False, dataname=None):
+    if dataname == "mnist":
+        X_train, X_test, y_train, y_test = mnist_data()
+    else:
+        X_train, X_test, y_train, y_test = prepare_data(X,y, missing = missing)
+    
+    input_dim = X_train.shape[1]  # Number of features
 
-    output_dim = len(np.unique(y))  # Number of classes (for Iris dataset)
+    output_dim = len(np.unique(y_train))  # Number of classes (for Iris dataset)
     variance_retained = .95
     pca = PCA(n_components=variance_retained)
     pca.fit(X_train)
